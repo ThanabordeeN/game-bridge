@@ -1,0 +1,10 @@
+{
+  "type": "translation.final",
+  "segment_id": 3,
+  "translation": {
+    "text": "Enemy is behind us.",
+    "confidence": 0.94,
+    "language": "english",
+    "latency_ms": 340
+  }
+}

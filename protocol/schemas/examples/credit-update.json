@@ -1,0 +1,6 @@
+{
+  "type": "credit.update",
+  "balance_minor": 8450,
+  "currency": "THB",
+  "low_credit_threshold_minor": 1000
+}

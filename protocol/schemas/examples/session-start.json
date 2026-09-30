@@ -1,0 +1,10 @@
+{
+  "type": "session.start",
+  "protocol_version": 1,
+  "source_language": "thai",
+  "target_language": "english",
+  "routing_mode": "voice_out",
+  "sample_rate_hz": 16000,
+  "context": "competitive_fps",
+  "voice_tier": "cloned"
+}

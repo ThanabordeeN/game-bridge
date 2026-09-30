@@ -1,0 +1,14 @@
+{
+  "type": "usage.update",
+  "usage": {
+    "active_voice": {
+      "speech_ms": 744000,
+      "session_ms": 1480000,
+      "segments": 96
+    },
+    "cost_minor": 620,
+    "currency": "THB",
+    "tier": "voice",
+    "latency_ms": 340
+  }
+}

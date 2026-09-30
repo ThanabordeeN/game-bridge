@@ -1,0 +1,5 @@
+{
+  "type": "audio.start",
+  "source": "physical_mic",
+  "segment_id": 0
+}

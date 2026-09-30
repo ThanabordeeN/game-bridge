@@ -1,0 +1,9 @@
+{
+  "type": "error",
+  "segment_id": 12,
+  "error": {
+    "code": "provider_timeout",
+    "message": "Translation timed out. Retrying.",
+    "retryable": true
+  }
+}

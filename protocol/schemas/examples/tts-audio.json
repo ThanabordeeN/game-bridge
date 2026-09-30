@@ -1,0 +1,12 @@
+{
+  "type": "tts.audio",
+  "segment_id": 3,
+  "chunk": {
+    "segment_id": 3,
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "bits_per_sample": 16,
+    "duration_ms": 240,
+    "is_final": false
+  }
+}

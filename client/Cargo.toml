@@ -1,0 +1,83 @@
+[package]
+name = "game-bridge-client"
+description = "Game Bridge Windows desktop client: audio capture, VAD, streaming, overlay, UI."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "game-bridge"
+path = "src/main.rs"
+# Deliberately NOT gated on `gui`: the binary has a headless mode that runs the
+# incoming pipeline with no display and no audio device, which is what makes the
+# product runnable on a headless machine. Without `gui` it simply cannot start
+# the desktop application, and says so.
+
+[features]
+# Nothing is on by default so that `cargo test` succeeds on a machine with no
+# audio, no display server, and no Windows SDK. This is what lets the VAD,
+# mixer, routing, and billing logic be unit-tested in CI on any platform.
+default = []
+
+# The desktop UI: egui/eframe. See README for why egui was chosen over Tauri.
+gui = ["dep:eframe", "dep:egui"]
+
+# WASAPI capture, application loopback, playback, and the virtual audio driver
+# handshake. Windows-only; pulls the `windows` crate.
+windows-audio = ["dep:windows"]
+
+# Global hotkey registration for push-to-translate (§11).
+windows-hotkeys = ["dep:windows"]
+
+# The click-through subtitle overlay window (§32).
+windows-overlay = ["dep:windows"]
+
+# Everything a real Windows build needs, matching a shipped client.
+full = ["gui", "windows-audio", "windows-hotkeys", "windows-overlay"]
+
+[dependencies]
+game-bridge-protocol.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+# HTTP for the translation provider. `ureq` is synchronous and dependency-light
+# compared with a full async stack, and translation runs on a worker thread
+# rather than in the UI loop, so blocking is the right shape. TLS comes from
+# rustls, which is on by default.
+ureq = { version = "3", features = ["json"] }
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Local-time formatting for feed timestamps. `local-offset` is needed for
+# `UtcOffset::current_local_offset`, which is unavailable by default.
+time = { workspace = true, features = ["local-offset"] }
+tokio.workspace = true
+
+# GUI, optional. Version 0.29 is pinned because the egui API changes between
+# minor releases; a floating version would break the UI on an unrelated update.
+eframe = { version = "0.29", optional = true, default-features = false, features = [
+    "default_fonts",
+    "glow",
+] }
+egui = { version = "0.29", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+# Note: Windows 10 2004+ is required for process (per-application) loopback,
+# which is exposed through Win32_Media_Audio. Earlier Windows versions can only
+# capture the whole render endpoint, which would mix every application together.
+windows = { version = "0.58", optional = true, features = [
+    "Win32_Foundation",
+    "Win32_Media_Audio",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Threading",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_Graphics_Gdi",
+] }

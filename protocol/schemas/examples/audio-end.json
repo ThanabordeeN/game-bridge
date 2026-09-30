@@ -1,0 +1,5 @@
+{
+  "type": "audio.end",
+  "segment_id": 0,
+  "reason": "silence"
+}

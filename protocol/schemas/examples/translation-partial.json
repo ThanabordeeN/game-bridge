@@ -1,0 +1,10 @@
+{
+  "type": "translation.partial",
+  "segment_id": 3,
+  "translation": {
+    "text": "Enemy is behi",
+    "confidence": 0.82,
+    "language": "english",
+    "latency_ms": 300
+  }
+}

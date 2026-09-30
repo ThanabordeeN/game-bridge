@@ -1,0 +1,29 @@
+# Rust
+/target
+**/*.rs.bk
+*.pdb
+
+# Windows driver build output
+*.sys
+*.inf.orig
+*.cer
+*.pvk
+*.pfx
+/virtual-audio-driver/build/
+/virtual-audio-driver/driver/**/*.vcxproj.user
+
+# Node (docs tooling only)
+node_modules/
+
+# Local config and secrets — never commit these
+.env
+.env.*
+*.local.toml
+config.local.toml
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

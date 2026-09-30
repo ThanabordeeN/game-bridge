@@ -1,0 +1,51 @@
+[workspace]
+resolver = "2"
+members = [
+    "client",
+    "protocol",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.78"
+license = "MIT"
+repository = "https://github.com/game-bridge/game-bridge"
+authors = ["Game Bridge contributors"]
+
+[workspace.dependencies]
+# Shared internal crates.
+game-bridge-protocol = { path = "protocol" }
+
+# Serialization — the wire format is JSON events + a binary audio frame header.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Async runtime, shared across client and future tooling.
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
+
+# Error handling.
+thiserror = "1"
+anyhow = "1"
+
+# Logging.
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Time.
+time = { version = "0.3", features = ["formatting", "macros"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+panic = "abort"
+
+# A smaller binary and lower idle footprint matter more than compile speed for a
+# background game utility (see README, §41 performance targets).
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 2

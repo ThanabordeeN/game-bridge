@@ -1,0 +1,100 @@
+; Game Bridge virtual audio driver — package definition skeleton.
+;
+; STATUS: NOT A WORKING DRIVER PACKAGE.
+;
+; This INF documents the device identity, endpoint names, and formats the
+; client depends on. It has never been processed by `stampinf`, never been
+; signed, and would not install. It exists so the contract between the client
+; and the driver is written down in the format Windows actually consumes.
+;
+; Do not attempt to install this file. See ../docs/build.md for the real
+; sequence, which begins by getting the unmodified `sysvad` sample building.
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = MEDIA
+ClassGuid   = {4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider    = %ProviderName%
+CatalogFile = gamebridge.cat
+DriverVer   = ; set by stampinf at build time
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+gamebridge.sys = 1,,
+
+; ---------------------------------------------------------------------------
+; Driver installation
+; ---------------------------------------------------------------------------
+; The hardware ID is deliberately a placeholder. A real device uses a unique
+; root-enumerated ID so Windows never matches it to unrelated hardware.
+
+[Manufacturer]
+%ProviderName% = GameBridge, NTamd64
+
+[GameBridge.NTamd64]
+%DeviceName% = GameBridge_Device, root\gamebridge
+
+[GameBridge_Device.NT]
+CopyFiles = GameBridge.CopyFiles
+
+[GameBridge_Device.NT.Services]
+AddService = gamebridge, 0x00000002, GameBridge_Service_Inst
+
+[GameBridge.CopyFiles]
+gamebridge.sys,,,2
+
+[GameBridge_Service_Inst]
+DisplayName    = %ServiceName%
+ServiceType    = 1                  ; kernel-mode driver
+StartType      = 3                  ; demand start
+ErrorControl   = 1                  ; normal
+ServiceBinary  = %12%\gamebridge.sys
+
+; ---------------------------------------------------------------------------
+; Audio interface
+; ---------------------------------------------------------------------------
+; The two endpoints below are one device to the user. The render endpoint is
+; where the client writes translated speech; the capture endpoint is what the
+; game selects as "Game Bridge Microphone".
+
+[GameBridge_Device.NT.Interfaces]
+AddInterface = %KSCATEGORY_AUDIO%, %KSNAME_GameBridge%, GameBridge.Audio
+
+[GameBridge.Audio]
+AddReg = GameBridge.Audio.AddReg
+
+[GameBridge.Audio.AddReg]
+; The friendly name is the string the user sees in Discord and in-game. It must
+; match VIRTUAL_DEVICE_NAME in client/src/device/detection.rs exactly, or the
+; client will report the driver as missing while it is installed.
+HKR,,FriendlyName,,%VirtualMicName%
+
+; ---------------------------------------------------------------------------
+; Formats
+; ---------------------------------------------------------------------------
+; 48 kHz mono 16-bit is the negotiated format. The client resamples TTS output
+; to this rate; the endpoint should not silently accept other rates without
+; converting, because a wrong assumption here produces sped-up or slowed audio
+; that is hard to diagnose from the client side.
+;
+; The concrete KSDATAFORMAT entries belong in the driver's own INF alongside
+; the miniport's format table. They are omitted here rather than guessed at.
+
+; ---------------------------------------------------------------------------
+; Strings
+; ---------------------------------------------------------------------------
+
+[Strings]
+ProviderName    = "Game Bridge"
+DiskName        = "Game Bridge Audio Driver"
+ServiceName     = "Game Bridge Virtual Audio"
+DeviceName      = "Game Bridge Virtual Audio Device"
+; §9 specifies this exact name, and the client matches on it.
+VirtualMicName  = "Game Bridge Microphone"
+KSCATEGORY_AUDIO = "{6994AD04-93EF-11D0-A3CC-00A0C9223196}"
+KSNAME_GameBridge = "GameBridgeAudio"

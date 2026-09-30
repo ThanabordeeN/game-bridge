@@ -1,0 +1,11 @@
+{
+  "type": "transcript.final",
+  "segment_id": 3,
+  "transcript": {
+    "text": "ศัตรูอยู่ข้างหลัง",
+    "language": "thai",
+    "confidence": 0.97,
+    "audio_ms": 1180,
+    "latency_ms": 240
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "type": "session.started",
+  "protocol_version": 1,
+  "credentials": {
+    "session_token": "gb_sess_9f2c1a4e7b3d",
+    "expires_at_unix": 1700003600,
+    "session_id": "sess_01HQ2X8W3Y",
+    "scopes": ["stt", "translate", "tts", "usage"]
+  },
+  "rates": [
+    { "tier": "subtitle", "minor_per_minute": 50, "currency_code": "THB" },
+    { "tier": "voice", "minor_per_minute": 250, "currency_code": "THB" },
+    { "tier": "premium_voice", "minor_per_minute": 400, "currency_code": "THB" }
+  ]
+}

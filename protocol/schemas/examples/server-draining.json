@@ -1,0 +1,4 @@
+{
+  "type": "server.draining",
+  "retry_after_ms": 5000
+}

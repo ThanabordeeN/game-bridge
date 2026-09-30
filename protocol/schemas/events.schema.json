@@ -1,0 +1,375 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gamebridge.dev/schemas/events.schema.json",
+  "title": "Game Bridge text channel events",
+  "description": "Version 1 wire events for the Game Bridge WebSocket text channel. Audio travels on the binary channel (see audio-frame.md); this schema covers JSON text messages only. Maintained by hand and verified against the Rust enums by protocol/tests/examples.rs.",
+  "oneOf": [
+    { "$ref": "#/$defs/clientSessionStart" },
+    { "$ref": "#/$defs/clientAudioStart" },
+    { "$ref": "#/$defs/clientAudioChunk" },
+    { "$ref": "#/$defs/clientAudioEnd" },
+    { "$ref": "#/$defs/clientSessionStop" },
+    { "$ref": "#/$defs/clientControlPtt" },
+    { "$ref": "#/$defs/clientControlBypass" },
+    { "$ref": "#/$defs/clientPing" },
+    { "$ref": "#/$defs/serverSessionStarted" },
+    { "$ref": "#/$defs/serverSpeechStart" },
+    { "$ref": "#/$defs/serverSpeechEnd" },
+    { "$ref": "#/$defs/serverTranscriptPartial" },
+    { "$ref": "#/$defs/serverTranscriptFinal" },
+    { "$ref": "#/$defs/serverTranslationPartial" },
+    { "$ref": "#/$defs/serverTranslationFinal" },
+    { "$ref": "#/$defs/serverTtsAudio" },
+    { "$ref": "#/$defs/serverUsageUpdate" },
+    { "$ref": "#/$defs/serverCreditUpdate" },
+    { "$ref": "#/$defs/serverDraining" },
+    { "$ref": "#/$defs/serverPong" },
+    { "$ref": "#/$defs/serverError" }
+  ],
+  "$defs": {
+    "language": {
+      "type": "string",
+      "description": "BCP-47 primary subtag, lowercased.",
+      "enum": [
+        "thai", "english", "japanese", "korean", "chinese", "vietnamese",
+        "indonesian", "spanish", "portuguese", "french", "german",
+        "russian", "turkish", "arabic", "hindi"
+      ]
+    },
+    "routingMode": {
+      "type": "string",
+      "description": "Which way audio flows for the session (spec 10).",
+      "enum": ["subtitle", "voice_out", "full_voice"]
+    },
+    "voiceTier": {
+      "type": "string",
+      "description": "Voice product as shown to the user (spec 24).",
+      "enum": ["standard", "cloned", "premium"]
+    },
+    "audioSource": {
+      "type": "string",
+      "description": "Origin of a piece of audio. virtual_mic_* are never valid translation inputs (spec 13).",
+      "enum": ["physical_mic", "application_loopback", "virtual_mic_render", "virtual_mic_loopback"]
+    },
+    "segmentEndReason": {
+      "type": "string",
+      "enum": ["silence", "push_to_translate_released", "user_stopped", "max_duration"]
+    },
+    "serviceTier": {
+      "type": "string",
+      "enum": ["subtitle", "voice", "premium_voice"]
+    },
+    "segmentId": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Monotonic per-session segment counter, starting at 0."
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+
+    "transcript": {
+      "type": "object",
+      "required": ["text", "language", "confidence", "audio_ms", "latency_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string" },
+        "language": { "$ref": "#/$defs/language" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "audio_ms": { "type": "integer", "minimum": 0 },
+        "latency_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "translation": {
+      "type": "object",
+      "required": ["text", "confidence", "language", "latency_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "language": { "$ref": "#/$defs/language" },
+        "latency_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "clientSessionStart": {
+      "type": "object",
+      "required": ["type", "protocol_version", "source_language", "target_language", "routing_mode", "sample_rate_hz"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "session.start" },
+        "protocol_version": { "type": "integer", "minimum": 1 },
+        "source_language": { "$ref": "#/$defs/language" },
+        "target_language": { "$ref": "#/$defs/language" },
+        "routing_mode": { "$ref": "#/$defs/routingMode" },
+        "sample_rate_hz": { "type": "integer", "minimum": 8000, "maximum": 48000 },
+        "context": {
+          "type": "string",
+          "description": "Game context hint for the translation prompt, e.g. competitive_fps."
+        },
+        "voice_tier": { "$ref": "#/$defs/voiceTier" }
+      }
+    },
+    "clientAudioStart": {
+      "type": "object",
+      "required": ["type", "source", "segment_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "audio.start" },
+        "source": { "$ref": "#/$defs/audioSource" },
+        "segment_id": { "$ref": "#/$defs/segmentId" }
+      }
+    },
+    "clientAudioChunk": {
+      "type": "object",
+      "required": ["type", "segment_id", "byte_len", "duration_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "audio.chunk" },
+        "segment_id": { "$ref": "#/$defs/segmentId" },
+        "byte_len": { "type": "integer", "minimum": 2 },
+        "duration_ms": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "clientAudioEnd": {
+      "type": "object",
+      "required": ["type", "segment_id", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "audio.end" },
+        "segment_id": { "$ref": "#/$defs/segmentId" },
+        "reason": { "$ref": "#/$defs/segmentEndReason" }
+      }
+    },
+    "clientSessionStop": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "session.stop" },
+        "reason": { "type": "string" }
+      }
+    },
+    "clientControlPtt": {
+      "type": "object",
+      "required": ["type", "engaged"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "control.ptt" },
+        "engaged": { "type": "boolean" }
+      }
+    },
+    "clientControlBypass": {
+      "type": "object",
+      "required": ["type", "enabled"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "control.bypass" },
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "clientPing": {
+      "type": "object",
+      "required": ["type", "sent_at_unix_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "ping" },
+        "sent_at_unix_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "serverSessionStarted": {
+      "type": "object",
+      "required": ["type", "credentials", "protocol_version", "rates"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "session.started" },
+        "protocol_version": { "type": "integer", "minimum": 1 },
+        "credentials": {
+          "type": "object",
+          "required": ["session_token", "expires_at_unix", "session_id", "scopes"],
+          "additionalProperties": false,
+          "properties": {
+            "session_token": { "type": "string", "minLength": 1 },
+            "expires_at_unix": { "type": "integer", "minimum": 0 },
+            "session_id": { "type": "string", "minLength": 1 },
+            "scopes": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "rates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tier", "minor_per_minute", "currency_code"],
+            "additionalProperties": false,
+            "properties": {
+              "tier": { "$ref": "#/$defs/serviceTier" },
+              "minor_per_minute": { "type": "integer", "minimum": 0 },
+              "currency_code": { "type": "string", "minLength": 3, "maxLength": 3 }
+            }
+          }
+        }
+      }
+    },
+    "serverSpeechStart": {
+      "type": "object",
+      "required": ["type", "segment_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "speech.start" },
+        "segment_id": { "$ref": "#/$defs/segmentId" }
+      }
+    },
+    "serverSpeechEnd": {
+      "type": "object",
+      "required": ["type", "segment_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "speech.end" },
+        "segment_id": { "$ref": "#/$defs/segmentId" }
+      }
+    },
+    "serverTranscriptPartial": {
+      "type": "object",
+      "required": ["type", "segment_id", "transcript"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "transcript.partial" },
+        "segment_id": { "$ref": "#/$defs/segmentId" },
+        "transcript": { "$ref": "#/$defs/transcript" }
+      }
+    },
+    "serverTranscriptFinal": {
+      "type": "object",
+      "required": ["type", "segment_id", "transcript"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "transcript.final" },
+        "segment_id": { "$ref": "#/$defs/segmentId" },
+        "transcript": { "$ref": "#/$defs/transcript" }
+      }
+    },
+    "serverTranslationPartial": {
+      "type": "object",
+      "required": ["type", "segment_id", "translation"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "translation.partial" },
+        "segment_id": { "$ref": "#/$defs/segmentId" },
+        "translation": { "$ref": "#/$defs/translation" }
+      }
+    },
+    "serverTranslationFinal": {
+      "type": "object",
+      "required": ["type", "segment_id", "translation"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "translation.final" },
+        "segment_id": { "$ref": "#/$defs/segmentId" },
+        "translation": { "$ref": "#/$defs/translation" }
+      }
+    },
+    "serverTtsAudio": {
+      "type": "object",
+      "required": ["type", "segment_id", "chunk"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "tts.audio" },
+        "segment_id": { "$ref": "#/$defs/segmentId" },
+        "chunk": {
+          "type": "object",
+          "required": ["segment_id", "sample_rate_hz", "channels", "bits_per_sample", "duration_ms", "is_final"],
+          "additionalProperties": false,
+          "properties": {
+            "segment_id": { "$ref": "#/$defs/segmentId" },
+            "sample_rate_hz": { "type": "integer", "minimum": 8000, "maximum": 48000 },
+            "channels": { "type": "integer", "minimum": 1, "maximum": 2 },
+            "bits_per_sample": { "const": 16 },
+            "duration_ms": { "type": "integer", "minimum": 0 },
+            "is_final": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "serverUsageUpdate": {
+      "type": "object",
+      "required": ["type", "usage"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "usage.update" },
+        "usage": {
+          "type": "object",
+          "required": ["active_voice", "cost_minor", "currency", "tier", "latency_ms"],
+          "additionalProperties": false,
+          "properties": {
+            "active_voice": {
+              "type": "object",
+              "required": ["speech_ms", "session_ms", "segments"],
+              "additionalProperties": false,
+              "properties": {
+                "speech_ms": { "type": "integer", "minimum": 0, "description": "The billed quantity." },
+                "session_ms": { "type": "integer", "minimum": 0, "description": "Wall-clock, never billed." },
+                "segments": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "cost_minor": { "type": "integer", "minimum": 0, "description": "Satang consumed this session." },
+            "currency": { "type": "string", "minLength": 3, "maxLength": 3 },
+            "tier": { "$ref": "#/$defs/serviceTier" },
+            "latency_ms": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "serverCreditUpdate": {
+      "type": "object",
+      "required": ["type", "balance_minor", "currency"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "credit.update" },
+        "balance_minor": { "type": "integer", "minimum": 0 },
+        "currency": { "type": "string", "minLength": 3, "maxLength": 3 },
+        "low_credit_threshold_minor": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "serverDraining": {
+      "type": "object",
+      "required": ["type", "retry_after_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "server.draining" },
+        "retry_after_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "serverPong": {
+      "type": "object",
+      "required": ["type", "sent_at_unix_ms", "received_at_unix_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "pong" },
+        "sent_at_unix_ms": { "type": "integer", "minimum": 0 },
+        "received_at_unix_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "serverError": {
+      "type": "object",
+      "required": ["type", "error"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "error" },
+        "segment_id": { "$ref": "#/$defs/segmentId" },
+        "error": {
+          "type": "object",
+          "required": ["code", "message", "retryable"],
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Stable machine-readable code.",
+              "examples": ["low_credit", "provider_timeout", "rate_limited", "voice_not_enrolled"]
+            },
+            "message": { "type": "string" },
+            "retryable": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}
